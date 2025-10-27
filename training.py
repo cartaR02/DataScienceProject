@@ -28,10 +28,10 @@ try:
 			DNA,classification = line.split(',')
 			dnaLength = len(DNA)
 			feature_list.append(DNA)
+			classification = classification.strip()
 			label_list.append(classification)
 			match classification:
 				case "DNA":
-					print("DNA")
 
 					DNAsum.append(dnaLength)
 				case "RNA":
@@ -44,9 +44,6 @@ try:
 except FileNotFoundError:
 	print(f"Error no file")
 
-counts = Counter(label_list)
-print(len(feature_list))
-print(len(label_list))
 
 dna_average = getAverage(DNAsum)
 print(f"DNA Average: {dna_average}")
