@@ -38,7 +38,7 @@ except FileNotFoundError:
 	print(f"Error no file")
 
 nrange_lower = 3
-nrange_upper = 9
+nrange_upper = 20
 
 
 
@@ -50,7 +50,7 @@ start = datetime.now()
 # build the modal
 text_classification_pipeline = Pipeline([
 	# Vectorize strings
-	('tfidf',TfidfVectorizer(ngram_range=(3,10), analyzer='char')),
+	('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char')),
 
 	# classifier learns to map nubmers to a label
 	#('clf', LogisticRegression(max_iter=1000))
