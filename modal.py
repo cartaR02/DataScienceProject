@@ -1,9 +1,11 @@
 from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 
+from datetime import datetime
 feature_list = []
 label_list = []
 DNAsum = []
@@ -35,21 +37,28 @@ try:
 except FileNotFoundError:
 	print(f"Error no file")
 
-print(len(feature_list))
+nrange_lower = 3
+nrange_upper = 9
+
+
+
+
 X_data = feature_list
 Y_data = label_list
 X_training_set, X_testing_set, Y_training_set, Y_testing_set = train_test_split(X_data, Y_data, test_size=.25, random_state=42)
-
+start = datetime.now()
 # build the modal
 text_classification_pipeline = Pipeline([
 	# Vectorize strings
-	('tfidf',TfidfVectorizer()),
+	('tfidf',TfidfVectorizer(ngram_range=(3,10), analyzer='char')),
 
 	# classifier learns to map nubmers to a label
-	('clf', LogisticRegression(max_iter=1000))
+	#('clf', LogisticRegression(max_iter=1000))
+    ('clf', DecisionTreeClassifier(random_state=0))
 ])
 
-print("Trianing the modal")
+print("Training the modal")
+print(f"NLower: {nrange_lower} NUpper: {nrange_upper}")
 text_classification_pipeline.fit(X_training_set, Y_training_set)
 
 print("evaluate the modal")
@@ -57,7 +66,10 @@ predictions = text_classification_pipeline.predict(X_testing_set)
 
 accuracy = accuracy_score(Y_testing_set, predictions)
 print(f"Accuracy on test data: {accuracy * 100:.2f}%")
-
+end = datetime.now()
+elapsed = end - start
+elapsed_time = str(elapsed).split(".")[0]
+print(f"Elapsed Time {elapsed_time}")
 # Answers
 # sum
 # nonDRNA
