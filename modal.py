@@ -1,6 +1,7 @@
 from sklearn.model_selection import train_test_split
 import csv
 from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -208,13 +209,68 @@ def runRandomForestModal(nrange_lower, nrange_upper, feature_limit):
     information_list.append(elapsed_time)
     return information_list
 
+def wrapperSGDCClassifier():
+    SClassifier= []
+    nLower = 3
+    nUpper = 6
+    lowerFeature = 1000
+    upperFeature = 10000
+    increaseBy = 1000
+    
+    SClassifier.append(["NRange_Upper", "NRange_Lower", "Feature_Limit", "Score1", "Score2", "Score3", "Score4", "Score5", "Time Elapsed"])
+    print("--------------SGDC Classifier-----------------")
+    for n in range (nLower, nUpper):
+        print("**********New nLower and nUpper************")
+        for max_feat in range (lowerFeature, upperFeature, increaseBy):
+            SClassifier.append(runSClassifier(nLower, n, max_feat))
+    with open('SGDCClassifier.csv', 'w', newline='') as outfile:
+        writer = csv.writer(outfile)
+        writer.writerows(SClassifier)
+
+def runSClassifier(nrange_lower, nrange_upper, feature_limit):
+    
+    information_list = []
+
+    X_data = feature_list
+    Y_data = label_list
+    start = datetime.now()
+    # build the modal
+    text_classification_pipeline = Pipeline([
+        # Vectorize strings
+        ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
+
+        ('clf',SGDClassifier (
+                                loss='log_loss',
+                                class_weight='balanced',
+                                max_iter=5000,
+                                alpha=1e-4,
+                                n_jobs=-1
+                                ))
+    ])
+    print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
+    information_list.append(nrange_lower)
+    information_list.append(nrange_upper)
+    information_list.append(feature_limit)
+
+    #getScores(text_classification_pipeline)
+    cross_validated_scores = cross_val_score(text_classification_pipeline, X_data, Y_data, cv=5)
+    print(cross_validated_scores)
+    for score in cross_validated_scores:
+        information_list.append(score)
+
+    end = datetime.now()
+    elapsed = end - start
+    elapsed_time = str(elapsed).split(".")[0]
+    print(f"Elapsed Time {elapsed_time}")
+    information_list.append(elapsed_time)
+    return information_list
 
 
 def main():
 
     #runTFIDDecisionTree()
-    runTFIDLogisticRegression()
+    #runTFIDLogisticRegression()
     #wrapperTFIDRandomForest()
-
+    wrapperSGDCClassifier()
 if __name__ == "__main__":
     main()
