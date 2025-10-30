@@ -74,6 +74,7 @@ def runNRangeModal(nrange_lower, nrange_upper, feature_limit, depth):
         #('clf', LogisticRegression(max_iter=1000))
         ('clf', DecisionTreeClassifier(random_state=0,
                                        max_depth=depth))
+
     ])
 
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit} Max Depth: {depth}")
@@ -124,7 +125,13 @@ def runLogisticModal(nrange_lower, nrange_upper, feature_limit):
         # Vectorize strings
         ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
 
-        ('clf', LogisticRegression(max_iter=1000))
+        ('clf', LogisticRegression(
+                                   max_iter=20000,
+                                   solver='saga',
+                                   class_weight='balanced',
+                                   C=.1,
+                                   n_jobs=-1
+        ))
     ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
     information_list.append(nrange_lower)
@@ -205,8 +212,8 @@ def runRandomForestModal(nrange_lower, nrange_upper, feature_limit):
 
 def main():
 
-    runTFIDDecisionTree()
-    #runTFIDLogisticRegression()
+    #runTFIDDecisionTree()
+    runTFIDLogisticRegression()
     #wrapperTFIDRandomForest()
 
 if __name__ == "__main__":
