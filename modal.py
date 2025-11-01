@@ -1,6 +1,6 @@
 from sklearn.model_selection import train_test_split
 import csv
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -211,18 +211,22 @@ def runRandomForestModal(nrange_lower, nrange_upper, feature_limit):
 
 def wrapperSGDCClassifier():
     SClassifier= []
-    nLower = 3
-    nUpper = 6
-    lowerFeature = 1000
-    upperFeature = 10000
-    increaseBy = 1000
-    
+    nLower = 2
+    nUpper = 8
+    lowerFeature = 15000
+    upperFeature = 20000
+    increaseBy = 2000
+    TestingOptions = True 
     SClassifier.append(["NRange_Upper", "NRange_Lower", "Feature_Limit", "Score1", "Score2", "Score3", "Score4", "Score5", "Time Elapsed"])
     print("--------------SGDC Classifier-----------------")
-    for n in range (nLower, nUpper):
-        print("**********New nLower and nUpper************")
-        for max_feat in range (lowerFeature, upperFeature, increaseBy):
-            SClassifier.append(runSClassifier(nLower, n, max_feat))
+    if TestingOptions:
+
+        for n in range (nLower, nUpper):
+            print("**********New nLower and nUpper************")
+            for max_feat in range (lowerFeature, upperFeature, increaseBy):
+                SClassifier.append(runSClassifier(nLower, n, max_feat))
+    else:
+        SClassifier.append(runSClassifier(2,7,19000))
     with open('SGDCClassifier.csv', 'w', newline='') as outfile:
         writer = csv.writer(outfile)
         writer.writerows(SClassifier)
@@ -251,13 +255,13 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     information_list.append(nrange_lower)
     information_list.append(nrange_upper)
     information_list.append(feature_limit)
-
+    crossFold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     #getScores(text_classification_pipeline)
-    cross_validated_scores = cross_val_score(text_classification_pipeline, X_data, Y_data, cv=5)
-    print(cross_validated_scores)
+    cross_validated_scores = cross_val_score(text_classification_pipeline, X_data, Y_data, cv=crossFold, n_jobs=-1)
+    #print(cross_validated_scores)
     for score in cross_validated_scores:
         information_list.append(score)
-
+    print(cross_validated_scores.mean())
     end = datetime.now()
     elapsed = end - start
     elapsed_time = str(elapsed).split(".")[0]
