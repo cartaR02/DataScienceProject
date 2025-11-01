@@ -246,7 +246,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
         ('clf',SGDClassifier (
                                 loss='log_loss',
                                 class_weight='balanced',
-                                max_iter=5000,
+                                max_iter=4000,
                                 alpha=1e-4,
                                 n_jobs=-1
                                 ))
