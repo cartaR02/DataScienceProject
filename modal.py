@@ -272,5 +272,6 @@ def main():
     #runTFIDLogisticRegression()
     #wrapperTFIDRandomForest()
     wrapperSGDCClassifier()
+# gettting ready to do anaalystis
 if __name__ == "__main__":
     main()
