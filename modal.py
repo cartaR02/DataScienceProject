@@ -276,5 +276,6 @@ def main():
     #runTFIDLogisticRegression()
     #wrapperTFIDRandomForest()
     wrapperSGDCClassifier()
+	# TODO work on getting information out of this and getting the accuracy in  the confusion matrix
 if __name__ == "__main__":
     main()
