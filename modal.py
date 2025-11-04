@@ -1,6 +1,6 @@
 from sklearn.model_selection import train_test_split
 import csv
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import cross_val_predict, StratifiedKFold
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -8,6 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import confusion_matrix
 
 from datetime import datetime
 feature_list = []
@@ -208,7 +209,6 @@ def runRandomForestModal(nrange_lower, nrange_upper, feature_limit):
     print(f"Elapsed Time {elapsed_time}")
     information_list.append(elapsed_time)
     return information_list
-
 def wrapperSGDCClassifier():
     SClassifier= []
     nLower = 2
@@ -216,7 +216,7 @@ def wrapperSGDCClassifier():
     lowerFeature = 15000
     upperFeature = 20000
     increaseBy = 2000
-    TestingOptions = True 
+    TestingOptions = False
     SClassifier.append(["NRange_Upper", "NRange_Lower", "Feature_Limit", "Score1", "Score2", "Score3", "Score4", "Score5", "Time Elapsed"])
     print("--------------SGDC Classifier-----------------")
     if TestingOptions:
@@ -226,6 +226,7 @@ def wrapperSGDCClassifier():
             for max_feat in range (lowerFeature, upperFeature, increaseBy):
                 SClassifier.append(runSClassifier(nLower, n, max_feat))
     else:
+        # current 
         SClassifier.append(runSClassifier(2,7,19000))
     with open('SGDCClassifier.csv', 'w', newline='') as outfile:
         writer = csv.writer(outfile)
@@ -237,6 +238,12 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
 
     X_data = feature_list
     Y_data = label_list
+    X_train, X_test, Y_train, Y_test = train_test(X_data,
+                                                  Y_data,
+                                                  test_size = .2
+                                                  random_state=42
+                                                  )
+
     start = datetime.now()
     # build the modal
     text_classification_pipeline = Pipeline([
@@ -257,11 +264,18 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     information_list.append(feature_limit)
     crossFold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     #getScores(text_classification_pipeline)
-    cross_validated_scores = cross_val_score(text_classification_pipeline, X_data, Y_data, cv=crossFold, n_jobs=-1)
+    cross_validated_pred = cross_val_predict(text_classification_pipeline, X_train, Y_train, cv=crossFold, n_jobs=-1)
     #print(cross_validated_scores)
-    for score in cross_validated_scores:
+    for score in cross_validated_pred:
         information_list.append(score)
-    print(cross_validated_scores.mean())
+
+
+    text_classification_pipeline.fit(X_data, Y_data)
+    confusion = confusion_matrix(Y_train, cross_validated_pred)
+    feature_names = text_classification_pipeline.named_steps['tfidf'].get_feature_names_out()
+    print(f"Feature names\n{feature_names}")
+    print(confusion)
+    
     end = datetime.now()
     elapsed = end - start
     elapsed_time = str(elapsed).split(".")[0]
