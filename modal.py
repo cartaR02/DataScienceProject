@@ -1,4 +1,5 @@
 from sklearn.model_selection import train_test_split
+import numpy
 import csv
 from sklearn.model_selection import cross_val_predict, StratifiedKFold
 from sklearn.linear_model import SGDClassifier
@@ -6,7 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support, matthews_corrcoef
 from sklearn.ensemble import RandomForestClassifier
 
 from datetime import datetime
@@ -41,173 +42,29 @@ try:
 except FileNotFoundError:
 	print(f"Error no file")
 
-def runTFIDDecisionTree():
-  
-    NRangeModalOutput = []
-    # start of main
-    NRangeModalOutput.append(["NRange_Upper", "NRange_Lower", "Feature_Limit", "Max_depth", "Score1", "Score2", "Score3", "Score4", "Score5", "Time Elapsed"])
-    nLower = 3
-    nUpper = 10
-    lowerFeature = 5000
-    upperFeature = 20000
-    print("--------------Decision Tree-----------------")
-    for n in range (nLower,nUpper):
-        for max_feat in range (lowerFeature, upperFeature, 5000):
-            for max_depth in range(10, 20):
-                NRangeModalOutput.append(runNRangeModal(nLower, n, max_feat, max_depth))
-    with open('NDecisionTree.csv', 'w', newline='') as outfile:
-        writer = csv.writer(outfile)
-        writer.writerows(NRangeModalOutput)
+def getMetrics(confusion_matrix, classNames):
+    metrics = {}
 
-def runNRangeModal(nrange_lower, nrange_upper, feature_limit, depth):
-    
-    information_list = []
+    FP = confusion_matrix.sum(axis=0) - numpy.diag(confusion_matrix)
+    FN = confusion_matrix.sum(axis=1) - numpy.diag(confusion_matrix)
+    TP = numpy.diag(confusion_matrix)
+    TN = confusion_matrix.sum() - (FP+FN+TP)
 
-    X_data = feature_list
-    Y_data = label_list
-    start = datetime.now()
-    # build the modal
-    text_classification_pipeline = Pipeline([
-        # Vectorize strings
-        ('tfidf',TfidfVectorizer(ngram_range=(3,10), analyzer='char',max_features=feature_limit)),
+    for i, classNames in enumerate(classNames):
+        sensitivity = TP[i] / (TP[i] + FN[i]) if (TP[i] + FN[i]) > 0 else 0
 
-        # classifier learns to map nubmers to a label
-        #('clf', LogisticRegression(max_iter=1000))
-        ('clf', DecisionTreeClassifier(random_state=0,
-                                       max_depth=depth))
+        specificity = TN[i] / (TN[i] + FP[i]) if (TN[i] + FP[i]) > 0 else 0
+        accuracy = (TP[i] + TN[i]) / confusion_matrix.sum()
 
-    ])
-
-    print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit} Max Depth: {depth}")
-    information_list.append(nrange_lower)
-    information_list.append(nrange_upper)
-    information_list.append(feature_limit)
-    information_list.append(depth)
-
-    #getScores(text_classification_pipeline)
-    cross_validated_scores = cross_val_score(text_classification_pipeline, X_data, Y_data, cv=5)
-    print(cross_validated_scores)
-    for score in cross_validated_scores:
-        information_list.append(score)
-
-    end = datetime.now()
-    elapsed = end - start
-    elapsed_time = str(elapsed).split(".")[0]
-    print(f"Elapsed Time {elapsed_time}")
-    information_list.append(elapsed_time)
-    return information_list
-
-def runTFIDLogisticRegression():
-    LogisticOutput = []
-    nLower = 3
-    nUpper = 10
-    lowerFeature = 5000
-    upperFeature = 55000
-    
-    LogisticOutput.append(["NRange_Upper", "NRange_Lower", "Feature_Limit", "Score1", "Score2", "Score3", "Score4", "Score5", "Time Elapsed"])
-    print("--------------Logistic Regression-----------------")
-    for n in range (nLower, nUpper):
-        print("**********New nLower and nUpper************")
-        for max_feat in range (lowerFeature, upperFeature, 10000):
-            LogisticOutput.append(runLogisticModal(nLower, n, max_feat))
-    with open('NLogisticOutput.csv', 'w', newline='') as outfile:
-        writer = csv.writer(outfile)
-        writer.writerows(LogisticOutput)
-
-def runLogisticModal(nrange_lower, nrange_upper, feature_limit):
-    
-    information_list = []
-
-    X_data = feature_list
-    Y_data = label_list
-    start = datetime.now()
-    # build the modal
-    text_classification_pipeline = Pipeline([
-        # Vectorize strings
-        ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
-
-        ('clf', LogisticRegression(
-                                   max_iter=20000,
-                                   solver='saga',
-                                   class_weight='balanced',
-                                   C=.1,
-                                   n_jobs=-1
-        ))
-    ])
-    print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
-    information_list.append(nrange_lower)
-    information_list.append(nrange_upper)
-    information_list.append(feature_limit)
-
-    #getScores(text_classification_pipeline)
-    cross_validated_scores = cross_val_score(text_classification_pipeline, X_data, Y_data, cv=5)
-    print(cross_validated_scores)
-    for score in cross_validated_scores:
-        information_list.append(score)
-
-    end = datetime.now()
-    elapsed = end - start
-    elapsed_time = str(elapsed).split(".")[0]
-    print(f"Elapsed Time {elapsed_time}")
-    information_list.append(elapsed_time)
-    return information_list
-
-
-def wrapperTFIDRandomForest():
-    RandomForestOutput = []
-    nLower = 3
-    nUpper = 10
-    lowerFeature = 5000
-    upperFeature = 55000
-    
-    RandomForestOutput.append(["NRange_Upper", "NRange_Lower", "Feature_Limit", "Score1", "Score2", "Score3", "Score4", "Score5", "Time Elapsed"])
-    print("--------------Random Tree-----------------")
-    for n in range (nLower, nUpper):
-        print("**********New nLower and nUpper************")
-        for max_feat in range (lowerFeature, upperFeature, 10000):
-            RandomForestOutput.append(runRandomForestModal(nLower, n, max_feat))
-    with open('NRandomForest.csv', 'w', newline='') as outfile:
-        writer = csv.writer(outfile)
-        writer.writerows(RandomForestOutput)
-
-def runRandomForestModal(nrange_lower, nrange_upper, feature_limit):
-    
-    information_list = []
-
-    X_data = feature_list
-    Y_data = label_list
-    start = datetime.now()
-    # build the modal
-    text_classification_pipeline = Pipeline([
-        # Vectorize strings
-        ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
-
-        ('clf', RandomForestClassifier(
-                                       n_estimators=300,
-                                       max_depth=None,
-                                       min_samples_split=2,
-                                       min_samples_leaf=1,
-                                       max_features='sqrt',
-                                       n_jobs=1,
-                                       random_state=42))
-    ])
-    print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
-    information_list.append(nrange_lower)
-    information_list.append(nrange_upper)
-    information_list.append(feature_limit)
-
-    #getScores(text_classification_pipeline)
-    cross_validated_scores = cross_val_score(text_classification_pipeline, X_data, Y_data, cv=5)
-    print(cross_validated_scores)
-    for score in cross_validated_scores:
-        information_list.append(score)
-
-    end = datetime.now()
-    elapsed = end - start
-    elapsed_time = str(elapsed).split(".")[0]
-    print(f"Elapsed Time {elapsed_time}")
-    information_list.append(elapsed_time)
-    return information_list
+        denom = numpy.sqrt((TP[i] + FP[i]) * (TP[i] + FN[i]) * (TN[i] + FP[i]) * (TN[i] + FN[i]))
+        mcc = ((TP[i] * TN[i]) - (FP[i] * FN[i])) / denom if denom > 0 else 0
+        metrics[classNames] = {
+                "Sensitivity": sensitivity,
+                "Specificity": specificity,
+                "Accuracy": accuracy,
+                "MCC": mcc
+                }
+        return metrics
 def wrapperSGDCClassifier():
     SClassifier= []
     nLower = 2
@@ -270,7 +127,10 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
 
     # --- 2. GET CV SCORES ---
     cv_accuracy = accuracy_score(Y_train, cross_validated_pred)
-    cv_precision, cv_recall, cv_f1, _ = precision_recall_fscore_support(Y_train, cross_validated_pred, average='weighted')
+    cv_precision, cv_recall, cv_f1, _ = precision_recall_fscore_support(Y_train, cross_validated_pred, average='weighted', zero_division=0)
+
+    cv_mcc = matthews_corrcoef(Y_train, cross_validated_pred)
+    print(f"CV MCC score (Estimate) {cv_mcc:.4f}")
     
     # <-- FIX: Append the summary scores, not the thousands of predictions
     information_list.append(cv_accuracy)
@@ -284,7 +144,6 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     print(f"CV Recall: {cv_recall:.4f}")
     print(f"CV F1-Score: {cv_f1:.4f}")
     
-    # <-- FIX: This is the CV confusion matrix
     cv_confusion = confusion_matrix(Y_train, cross_validated_pred) 
     print("CV Confusion Matrix:")
     print(cv_confusion)
@@ -302,10 +161,8 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     print("Testing the final model on unseen test data...")
     final_predictions = text_classification_pipeline.predict(X_test)
     
-    # <-- FIX: Typo was 'presicion'
     final_precision, final_recall, final_f1, _ = precision_recall_fscore_support(Y_test, final_predictions, average='weighted') 
-    
-    # <-- FIX: Typo was 'accuracy_scores' (plural)
+    final_mcc = matthews_corrcoef(Y_test, final_predictions)
     final_accuracy = accuracy_score(Y_test, final_predictions) 
 
     print("\n--- FINAL MODEL TEST RESULTS ---")
@@ -315,6 +172,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     print(f"Final Precision: {final_precision:.4f}")
     print(f"Final Recall: {final_recall:.4f}")
     print(f"Final F1-Score: {final_f1:.4f}")
+    print(f"Final MCC: {final_mcc:.4f}")
     
     # <-- FIX: This is the FINAL confusion matrix
     final_confusion = confusion_matrix(Y_test, final_predictions)
@@ -323,6 +181,12 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     print("Final Confusion Matrix:")
     print(final_confusion)
 
+    cv_class_metrics = getMetrics(final_confusion, feature_names)
+    print("\n Per class metrics")
+    for class_name, metrics in cv_class_metrics.items():
+        print(f"\nClass: {class_name}")
+        for metric, value in metrics.items():
+            print(f" {metric}: {value:.4f}")
 
     end = datetime.now()
     elapsed = end - start
