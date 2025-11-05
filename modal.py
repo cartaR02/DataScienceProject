@@ -6,9 +6,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix
 
 from datetime import datetime
 feature_list = []
@@ -238,9 +237,9 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
 
     X_data = feature_list
     Y_data = label_list
-    X_train, X_test, Y_train, Y_test = train_test(X_data,
+    X_train, X_test, Y_train, Y_test = train_test_split(X_data,
                                                   Y_data,
-                                                  test_size = .2
+                                                  test_size = .2,
                                                   random_state=42
                                                   )
 
@@ -252,8 +251,8 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
 
         ('clf',SGDClassifier (
                                 loss='log_loss',
-                                class_weight='balanced',
                                 max_iter=4000,
+                                class_weight='balanced',
                                 alpha=1e-4,
                                 n_jobs=-1
                                 ))
@@ -262,20 +261,69 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     information_list.append(nrange_lower)
     information_list.append(nrange_upper)
     information_list.append(feature_limit)
-    crossFold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    #getScores(text_classification_pipeline)
-    cross_validated_pred = cross_val_predict(text_classification_pipeline, X_train, Y_train, cv=crossFold, n_jobs=-1)
-    #print(cross_validated_scores)
-    for score in cross_validated_pred:
-        information_list.append(score)
 
-
-    text_classification_pipeline.fit(X_data, Y_data)
-    confusion = confusion_matrix(Y_train, cross_validated_pred)
-    feature_names = text_classification_pipeline.named_steps['tfidf'].get_feature_names_out()
-    print(f"Feature names\n{feature_names}")
-    print(confusion)
     
+    # --- 1. CROSS-VALIDATION on 80% TRAINING SET ---
+    print("Running 5-fold cross-validation on training data...")
+    crossFold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cross_validated_pred = cross_val_predict(text_classification_pipeline, X_train, Y_train, cv=crossFold, n_jobs=-1)
+
+    # --- 2. GET CV SCORES ---
+    cv_accuracy = accuracy_score(Y_train, cross_validated_pred)
+    cv_precision, cv_recall, cv_f1, _ = precision_recall_fscore_support(Y_train, cross_validated_pred, average='weighted')
+    
+    # <-- FIX: Append the summary scores, not the thousands of predictions
+    information_list.append(cv_accuracy)
+    information_list.append(cv_precision)
+    information_list.append(cv_recall)
+    information_list.append(cv_f1)
+    
+    print("\n--- CROSS-VALIDATION RESULTS (ESTIMATE) ---")
+    print(f"CV Accuracy: {cv_accuracy:.4f}")
+    print(f"CV Precision: {cv_precision:.4f}")
+    print(f"CV Recall: {cv_recall:.4f}")
+    print(f"CV F1-Score: {cv_f1:.4f}")
+    
+    # <-- FIX: This is the CV confusion matrix
+    cv_confusion = confusion_matrix(Y_train, cross_validated_pred) 
+    print("CV Confusion Matrix:")
+    print(cv_confusion)
+
+
+    # --- 3. TRAINING FINAL MODEL on 80% TRAINING SET ---
+    print("\nTraining the final model on all training data...")
+    text_classification_pipeline.fit(X_train, Y_train)
+
+    # Get class names
+    feature_names = text_classification_pipeline.named_steps['clf'].classes_
+
+
+    # --- 4. TESTING FINAL MODEL on 20% TEST SET ---
+    print("Testing the final model on unseen test data...")
+    final_predictions = text_classification_pipeline.predict(X_test)
+    
+    # <-- FIX: Typo was 'presicion'
+    final_precision, final_recall, final_f1, _ = precision_recall_fscore_support(Y_test, final_predictions, average='weighted') 
+    
+    # <-- FIX: Typo was 'accuracy_scores' (plural)
+    final_accuracy = accuracy_score(Y_test, final_predictions) 
+
+    print("\n--- FINAL MODEL TEST RESULTS ---")
+    
+    # <-- FIX: Corrected the print labels
+    print(f"Final Accuracy: {final_accuracy:.4f}")
+    print(f"Final Precision: {final_precision:.4f}")
+    print(f"Final Recall: {final_recall:.4f}")
+    print(f"Final F1-Score: {final_f1:.4f}")
+    
+    # <-- FIX: This is the FINAL confusion matrix
+    final_confusion = confusion_matrix(Y_test, final_predictions)
+    
+    print(f"\nClass names (in order): {feature_names}")
+    print("Final Confusion Matrix:")
+    print(final_confusion)
+
+
     end = datetime.now()
     elapsed = end - start
     elapsed_time = str(elapsed).split(".")[0]
