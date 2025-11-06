@@ -20,7 +20,7 @@ DRNAsum = []
 file_name = "sequences_training.txt"
 modified_training = "modified_training.txt"
 try: 
-	with open(modified_training, 'r') as file:
+	with open(file_name, 'r') as file:
 
 		for line in file:
 
@@ -42,6 +42,11 @@ try:
 except FileNotFoundError:
 	print(f"Error no file")
 
+def saveDataSet(X, Y, filename):
+    with open(filename, 'w') as f:
+        for sequence, label in zip(X, Y):
+            f.write(f"{sequence},{label}\n")
+        print(f"Saved {filename}")
 def getMetrics(confusion_matrix, classNames):
     metrics = {}
 
@@ -93,7 +98,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
                                                   test_size = .2,
                                                   random_state=42
                                                   )
-
+    saveDataSet(X_train, Y_train, "trainingsets.txt")
     start = datetime.now()
     # build the modal
     text_classification_pipeline = Pipeline([
@@ -110,7 +115,6 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
 
-    
     # --- 1. CROSS-VALIDATION on 80% TRAINING SET ---
     print("Running 5-fold cross-validation on training data...")
     crossFold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -135,7 +139,17 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     print("CV Confusion Matrix:")
     print(cv_confusion)
 
+    class_names = numpy.unique(Y_train)
+    cv_class_metrics = getMetrics(cv_confusion, class_names)
+    print("\n Per class metrics")
+    for class_name, metrics in cv_class_metrics.items():
+        print(f"\nClass: {class_name}")
+        for metric, value in metrics.items():
+            print(f" {metric}: {value:.4f}")
 
+
+
+    # RUNNING MODAL FOR REAL NO TEST
     # --- 3. TRAINING FINAL MODEL on 80% TRAINING SET ---
     print("\nTraining the final model on all training data...")
     text_classification_pipeline.fit(X_train, Y_train)
@@ -168,9 +182,9 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     print("Final Confusion Matrix:")
     print(final_confusion)
 
-    cv_class_metrics = getMetrics(final_confusion, feature_names)
+    final_class_metrics = getMetrics(final_confusion, feature_names)
     print("\n Per class metrics")
-    for class_name, metrics in cv_class_metrics.items():
+    for class_name, metrics in final_class_metrics.items():
         print(f"\nClass: {class_name}")
         for metric, value in metrics.items():
             print(f" {metric}: {value:.4f}")
