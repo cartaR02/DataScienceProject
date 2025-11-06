@@ -64,33 +64,27 @@ def getMetrics(confusion_matrix, classNames):
                 "Accuracy": accuracy,
                 "MCC": mcc
                 }
-        return metrics
+    return metrics
 def wrapperSGDCClassifier():
-    SClassifier= []
     nLower = 2
     nUpper = 8
     lowerFeature = 15000
     upperFeature = 20000
     increaseBy = 2000
     TestingOptions = False
-    SClassifier.append(["NRange_Upper", "NRange_Lower", "Feature_Limit", "Score1", "Score2", "Score3", "Score4", "Score5", "Time Elapsed"])
     print("--------------SGDC Classifier-----------------")
     if TestingOptions:
 
         for n in range (nLower, nUpper):
             print("**********New nLower and nUpper************")
             for max_feat in range (lowerFeature, upperFeature, increaseBy):
-                SClassifier.append(runSClassifier(nLower, n, max_feat))
+                runSClassifier(nLower, n, max_feat)
     else:
         # current 
-        SClassifier.append(runSClassifier(2,7,19000))
-    with open('SGDCClassifier.csv', 'w', newline='') as outfile:
-        writer = csv.writer(outfile)
-        writer.writerows(SClassifier)
+        runSClassifier(2,7,19000)
 
 def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     
-    information_list = []
 
     X_data = feature_list
     Y_data = label_list
@@ -115,9 +109,6 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
                                 ))
     ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
-    information_list.append(nrange_lower)
-    information_list.append(nrange_upper)
-    information_list.append(feature_limit)
 
     
     # --- 1. CROSS-VALIDATION on 80% TRAINING SET ---
@@ -133,10 +124,6 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     print(f"CV MCC score (Estimate) {cv_mcc:.4f}")
     
     # <-- FIX: Append the summary scores, not the thousands of predictions
-    information_list.append(cv_accuracy)
-    information_list.append(cv_precision)
-    information_list.append(cv_recall)
-    information_list.append(cv_f1)
     
     print("\n--- CROSS-VALIDATION RESULTS (ESTIMATE) ---")
     print(f"CV Accuracy: {cv_accuracy:.4f}")
@@ -192,8 +179,6 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     elapsed = end - start
     elapsed_time = str(elapsed).split(".")[0]
     print(f"Elapsed Time {elapsed_time}")
-    information_list.append(elapsed_time)
-    return information_list
 
 
 def main():
