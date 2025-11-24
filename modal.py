@@ -105,13 +105,9 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
         # Vectorize strings
         ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
 
-        ('clf',SGDClassifier (
-                                loss='log_loss',
-                                max_iter=4000,
-                                class_weight='balanced',
-                                alpha=1e-4,
-                                n_jobs=-1
-                                ))
+        #('clf',SGDClassifier (loss='log_loss', max_iter=4000, class_weight='balanced', alpha=1e-4, n_jobs=-1))
+        ('clf', DecisionTreeClassifier(random_state=0,
+                                max_depth=10))
     ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
 

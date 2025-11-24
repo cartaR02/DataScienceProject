@@ -2,69 +2,69 @@
 Saved trainingsets.txt
 NLower: 2 NUpper: 7 Max Feature: 19000
 Running 5-fold cross-validation on training data...
-CV MCC score (Estimate) 0.4467
+CV MCC score (Estimate) 0.1814
 
 --- CROSS-VALIDATION RESULTS (ESTIMATE) ---
-CV Accuracy: 0.9113
-CV Precision: 0.8939
-CV Recall: 0.9113
-CV F1-Score: 0.8972
+CV Accuracy: 0.8826
+CV Precision: 0.8422
+CV Recall: 0.8826
+CV F1-Score: 0.8564
 CV Confusion Matrix:
-[[  59    1   13  244]
- [   1    2    0   15]
- [   8    0  185  223]
- [  78    1   40 6166]]
+[[  26    1   10  280]
+ [   0    0    1   17]
+ [  10    0   63  343]
+ [  55    2  107 6121]]
 
  Per class metrics
 
 Class: DNA
- Sensitivity: 0.1861
- Specificity: 0.9871
- Accuracy: 0.9510
- MCC: 0.2520
+ Sensitivity: 0.0820
+ Specificity: 0.9903
+ Accuracy: 0.9494
+ MCC: 0.1328
 
 Class: DRNA
- Sensitivity: 0.1111
- Specificity: 0.9997
- Accuracy: 0.9974
- MCC: 0.2349
+ Sensitivity: 0.0000
+ Specificity: 0.9996
+ Accuracy: 0.9970
+ MCC: -0.0010
 
 Class: RNA
- Sensitivity: 0.4447
- Specificity: 0.9920
- Accuracy: 0.9596
- MCC: 0.5698
+ Sensitivity: 0.1514
+ Specificity: 0.9822
+ Accuracy: 0.9331
+ MCC: 0.1991
 
 Class: nonDRNA
- Sensitivity: 0.9811
- Specificity: 0.3582
- Accuracy: 0.9146
- MCC: 0.4589
+ Sensitivity: 0.9739
+ Specificity: 0.1478
+ Accuracy: 0.8857
+ MCC: 0.1939
 
 Training the final model on all training data...
 Testing the final model on unseen test data...
 
 --- FINAL MODEL TEST RESULTS ---
-Final Accuracy: 0.9045
-Final Precision: 0.8888
-Final Recall: 0.9045
-Final F1-Score: 0.8912
-Final MCC: 0.3951
+Final Accuracy: 0.8812
+Final Precision: 0.8340
+Final Recall: 0.8812
+Final F1-Score: 0.8527
+Final MCC: 0.1414
 
 Class names (in order): ['DNA' 'DRNA' 'RNA' 'nonDRNA']
 Final Confusion Matrix:
-[[  13    0    2   59]
- [   0    0    0    4]
- [   4    0   42   61]
- [  30    0    8 1536]]
+[[   3    0    4   67]
+ [   0    0    1    3]
+ [   2    0   13   92]
+ [  14    0   26 1534]]
 
  Per class metrics
 
 Class: DNA
- Sensitivity: 0.1757
- Specificity: 0.9798
- Accuracy: 0.9460
- MCC: 0.1936
+ Sensitivity: 0.0405
+ Specificity: 0.9905
+ Accuracy: 0.9505
+ MCC: 0.0603
 
 Class: DRNA
  Sensitivity: 0.0000
@@ -73,14 +73,14 @@ Class: DRNA
  MCC: 0.0000
 
 Class: RNA
- Sensitivity: 0.3925
- Specificity: 0.9939
- Accuracy: 0.9574
- MCC: 0.5454
+ Sensitivity: 0.1215
+ Specificity: 0.9812
+ Accuracy: 0.9289
+ MCC: 0.1572
 
 Class: nonDRNA
- Sensitivity: 0.9759
- Specificity: 0.3297
- Accuracy: 0.9079
- MCC: 0.4068
-Elapsed Time 0:01:09
+ Sensitivity: 0.9746
+ Specificity: 0.1243
+ Accuracy: 0.8852
+ MCC: 0.1633
+Elapsed Time 0:03:42
