@@ -47,7 +47,7 @@ def saveDataSet(X, Y, filename):
         for sequence, label in zip(X, Y):
             f.write(f"{sequence},{label}\n")
         print(f"Saved {filename}")
-def getMetrics(confusion_matrix, classNames):
+def getMetrics(confusion_matrix, classNamesList):
     metrics = {}
 
     FP = confusion_matrix.sum(axis=0) - numpy.diag(confusion_matrix)
@@ -55,7 +55,7 @@ def getMetrics(confusion_matrix, classNames):
     TP = numpy.diag(confusion_matrix)
     TN = confusion_matrix.sum() - (FP+FN+TP)
 
-    for i, classNames in enumerate(classNames):
+    for i, classNames in enumerate(classNamesList):
         sensitivity = TP[i] / (TP[i] + FN[i]) if (TP[i] + FN[i]) > 0 else 0
 
         specificity = TN[i] / (TN[i] + FP[i]) if (TN[i] + FP[i]) > 0 else 0
@@ -93,11 +93,9 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
 
     X_data = feature_list
     Y_data = label_list
-    X_train, X_test, Y_train, Y_test = train_test_split(X_data,
-                                                  Y_data,
-                                                  test_size = .2,
-                                                  random_state=42
-                                                  )
+    X_train = X_data
+    Y_train = Y_data
+    # X_train, Y_train= train_test_split(X_data,Y_data,random_state=42 )
     saveDataSet(X_train, Y_train, "trainingsets.txt")
     start = datetime.now()
     # build the modal
@@ -105,9 +103,8 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
         # Vectorize strings
         ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
 
-        #('clf',SGDClassifier (loss='log_loss', max_iter=4000, class_weight='balanced', alpha=1e-4, n_jobs=-1))
-        ('clf', DecisionTreeClassifier(random_state=0,
-                                max_depth=10))
+        ('clf',SGDClassifier (loss='log_loss', max_iter=4000, class_weight='balanced', alpha=1e-5, n_jobs=-1))
+        #('clf', DecisionTreeClassifier(random_state,max_depth=10))
     ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
 
@@ -153,7 +150,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     # Get class names
     feature_names = text_classification_pipeline.named_steps['clf'].classes_
 
-
+    """
     # --- 4. TESTING FINAL MODEL on 20% TEST SET ---
     print("Testing the final model on unseen test data...")
     final_predictions = text_classification_pipeline.predict(X_test)
@@ -184,7 +181,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
         print(f"\nClass: {class_name}")
         for metric, value in metrics.items():
             print(f" {metric}: {value:.4f}")
-
+    """
     end = datetime.now()
     elapsed = end - start
     elapsed_time = str(elapsed).split(".")[0]
