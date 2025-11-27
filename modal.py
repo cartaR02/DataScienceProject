@@ -7,8 +7,9 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support, matthews_corrcoef
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 
 from datetime import datetime
 feature_list = []
@@ -98,12 +99,23 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     # X_train, Y_train= train_test_split(X_data,Y_data,random_state=42 )
     saveDataSet(X_train, Y_train, "trainingsets.txt")
     start = datetime.now()
+
+    # creating classifiers
+    sgdClassifier = SGDClassifier(loss='log_loss', max_iter=4000, class_weight='balanced', alpha=1e-5, n_jobs=-1)
+
+    forestClassifier = RandomForestClassifier(n_estimators=100, class_weight='balanced', max_depth=5, n_jobs=1, random_state=42)
     # build the modal
+    print("Building Modal with sgdClassifier and RandomForestClassifier")
     text_classification_pipeline = Pipeline([
         # Vectorize strings
         ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
 
-        ('clf',SGDClassifier (loss='log_loss', max_iter=4000, class_weight='balanced', alpha=1e-5, n_jobs=-1))
+        ('selector', SelectKBest(chi2, k=feature_limit)),
+
+        ('ensemble', VotingClassifier(estimators=[
+            ('sgd', sgdClassifier),
+            ('rf', forestClassifier)
+            ], voting='soft', n_jobs=-1))
         #('clf', DecisionTreeClassifier(random_state,max_depth=10))
     ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
