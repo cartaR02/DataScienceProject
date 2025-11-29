@@ -5,11 +5,12 @@ from sklearn.model_selection import cross_val_predict, StratifiedKFold
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support, matthews_corrcoef
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier, StackingClassifier
 
 from datetime import datetime
 feature_list = []
@@ -104,20 +105,37 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     sgdClassifier = SGDClassifier(loss='log_loss', max_iter=4000, class_weight='balanced', alpha=1e-5, n_jobs=-1)
 
     forestClassifier = RandomForestClassifier(n_estimators=100, class_weight='balanced', max_depth=5, n_jobs=1, random_state=42)
-    # build the modal
-    print("Building Modal with sgdClassifier and RandomForestClassifier")
-    text_classification_pipeline = Pipeline([
-        # Vectorize strings
-        ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
+    nominalClassifier = MultinomialNB()
+    metaClassifier = LogisticRegression(class_weight='balanced', max_iter=2000)
+    
+    #build the modal
+    justSGD = True
 
-        ('selector', SelectKBest(chi2, k=feature_limit)),
+    if justSGD:
+        print("Just using SGD classifier")
+        text_classification_pipeline = Pipeline([
+            # Vectorize strings
+            ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
+            ('clf', sgdClassifier)
 
-        ('ensemble', VotingClassifier(estimators=[
-            ('sgd', sgdClassifier),
-            ('rf', forestClassifier)
-            ], voting='soft', n_jobs=-1))
-        #('clf', DecisionTreeClassifier(random_state,max_depth=10))
-    ])
+        ])
+    else:
+        print("selector and ensemble with sgd and nominal classifier")
+        print("Using ensemble")
+        text_classification_pipeline = Pipeline([
+            # Vectorize strings
+            ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit*2)),
+
+            ('selector', SelectKBest(chi2, k=feature_limit)),
+
+            ('ensemble', StackingClassifier(estimators=[
+                ('sgd', sgdClassifier),
+                ('nm', nominalClassifier)
+                ], 
+                final_estimator=metaClassifier,
+                n_jobs=-1))
+            #('clf', DecisionTreeClassifier(random_state,max_depth=10))
+        ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
 
     # --- 1. CROSS-VALIDATION on 80% TRAINING SET ---
@@ -142,17 +160,21 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     
     cv_confusion = confusion_matrix(Y_train, cross_validated_pred) 
     print("CV Confusion Matrix:")
+    print("  DNA  DRNA RNA  nonDRNA")
     print(cv_confusion)
 
     class_names = numpy.unique(Y_train)
     cv_class_metrics = getMetrics(cv_confusion, class_names)
     print("\n Per class metrics")
+    mccAverage = 0
     for class_name, metrics in cv_class_metrics.items():
         print(f"\nClass: {class_name}")
         for metric, value in metrics.items():
+            if metric == 'MCC':
+                mccAverage = mccAverage + value
             print(f" {metric}: {value:.4f}")
-
-
+    mccAverage = mccAverage/4
+    print(f"MCC Average: {mccAverage:.4f}")
 
     # RUNNING MODAL FOR REAL NO TEST
     # --- 3. TRAINING FINAL MODEL on 80% TRAINING SET ---
@@ -160,7 +182,10 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     text_classification_pipeline.fit(X_train, Y_train)
 
     # Get class names
-    feature_names = text_classification_pipeline.named_steps['clf'].classes_
+    if justSGD:
+        feature_names = text_classification_pipeline.named_steps['clf'].classes_
+    else:
+        feature_names = text_classification_pipeline.named_steps['ensemble'].classes_
 
     """
     # --- 4. TESTING FINAL MODEL on 20% TEST SET ---
