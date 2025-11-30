@@ -113,6 +113,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
 
     if justSGD:
         print("Just using SGD classifier")
+        print("Final modal selection")
         text_classification_pipeline = Pipeline([
             # Vectorize strings
             ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
@@ -187,6 +188,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     else:
         feature_names = text_classification_pipeline.named_steps['ensemble'].classes_
 
+    # TODO make file to be able to test on and then uncomment this
     """
     # --- 4. TESTING FINAL MODEL on 20% TEST SET ---
     print("Testing the final model on unseen test data...")
