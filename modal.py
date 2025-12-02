@@ -12,6 +12,7 @@ from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support, matthews_corrcoef
 from sklearn.ensemble import RandomForestClassifier, VotingClassifier, StackingClassifier
 
+from collections import Counter
 from datetime import datetime
 feature_list = []
 label_list = []
@@ -44,10 +45,11 @@ try:
 except FileNotFoundError:
 	print(f"Error no file")
 
-def saveDataSet(X, Y, filename):
+# takes the list of predicted labels and makes it into a txt file given filename
+def saveDataSet(pred_lab, filename):
     with open(filename, 'w') as f:
-        for sequence, label in zip(X, Y):
-            f.write(f"{sequence},{label}\n")
+        for predicted_label in pred_lab:
+            f.write(f"{predicted_label}\n")
         print(f"Saved {filename}")
 def getMetrics(confusion_matrix, classNamesList):
     metrics = {}
@@ -98,7 +100,7 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     X_train = X_data
     Y_train = Y_data
     # X_train, Y_train= train_test_split(X_data,Y_data,random_state=42 )
-    saveDataSet(X_train, Y_train, "trainingsets.txt")
+    #saveDataSet(X_train, Y_train, "trainingsets.txt")
     start = datetime.now()
 
     # creating classifiers
@@ -188,44 +190,53 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     else:
         feature_names = text_classification_pipeline.named_steps['ensemble'].classes_
 
+    counts = Counter(Y_data)
+    total_count = len(Y_data)
+    print("Blind Test distribution")
+    for label in ['DNA', 'RNA', 'DRNA', 'nonDRNA']:
+        count = counts[label]
+        percent = (count / total_count) * 100
+        print(f"{label:<10} | {count:<10} | {percent:.2f}%")
+
     # TODO make file to be able to test on and then uncomment this
-    """
-    # --- 4. TESTING FINAL MODEL on 20% TEST SET ---
-    print("Testing the final model on unseen test data...")
-    final_predictions = text_classification_pipeline.predict(X_test)
-    
-    final_precision, final_recall, final_f1, _ = precision_recall_fscore_support(Y_test, final_predictions, average='weighted') 
-    final_mcc = matthews_corrcoef(Y_test, final_predictions)
-    final_accuracy = accuracy_score(Y_test, final_predictions) 
-
-    print("\n--- FINAL MODEL TEST RESULTS ---")
-    
-    # <-- FIX: Corrected the print labels
-    print(f"Final Accuracy: {final_accuracy:.4f}")
-    print(f"Final Precision: {final_precision:.4f}")
-    print(f"Final Recall: {final_recall:.4f}")
-    print(f"Final F1-Score: {final_f1:.4f}")
-    print(f"Final MCC: {final_mcc:.4f}")
-    
-    # <-- FIX: This is the FINAL confusion matrix
-    final_confusion = confusion_matrix(Y_test, final_predictions)
-    
-    print(f"\nClass names (in order): {feature_names}")
-    print("Final Confusion Matrix:")
-    print(final_confusion)
-
-    final_class_metrics = getMetrics(final_confusion, feature_names)
-    print("\n Per class metrics")
-    for class_name, metrics in final_class_metrics.items():
-        print(f"\nClass: {class_name}")
-        for metric, value in metrics.items():
-            print(f" {metric}: {value:.4f}")
-    """
+    generate_predictions(text_classification_pipeline)
     end = datetime.now()
     elapsed = end - start
     elapsed_time = str(elapsed).split(".")[0]
     print(f"Elapsed Time {elapsed_time}")
 
+def generate_predictions(model):
+    output_filename = "FINALpredictions.txt"
+    input_filename = "sequences_test.txt"
+    # handle the lines into a list
+    # for each guess add to a new list
+    input_sequences = []
+
+    # generate list of the inputs
+    try: 
+        with open(input_filename, 'r') as file:
+            for line in file:
+                input_sequences.append(line)
+    except FileNotFoundError:
+        print(f"Error no file")
+        
+
+
+    print("Predicting")
+    output_predictions = model.predict(input_sequences)
+
+    saveDataSet(output_predictions, output_filename)
+    print(f"Predictions Made at {output_filename}")
+
+    counts = Counter(output_predictions)
+    total_count = len(input_sequences)
+    print("Blind Test distribution")
+    for label in ['DNA', 'RNA', 'DRNA', 'nonDRNA']:
+        count = counts[label]
+        percent = (count / total_count) * 100
+        print(f"{label:<10} | {count:<10} | {percent:.2f}%")
+
+    
 
 def main():
 
