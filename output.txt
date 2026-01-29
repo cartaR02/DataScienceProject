@@ -2,26 +2,26 @@
 Saved trainingsets.txt
 NLower: 2 NUpper: 7 Max Feature: 19000
 Running 5-fold cross-validation on training data...
-CV MCC score (Estimate) 0.4467
+CV MCC score (Estimate) 0.4424
 
 --- CROSS-VALIDATION RESULTS (ESTIMATE) ---
-CV Accuracy: 0.9113
-CV Precision: 0.8939
-CV Recall: 0.9113
-CV F1-Score: 0.8972
+CV Accuracy: 0.9119
+CV Precision: 0.8926
+CV Recall: 0.9119
+CV F1-Score: 0.8958
 CV Confusion Matrix:
-[[  59    1   13  244]
+[[  49    1   14  253]
  [   1    2    0   15]
- [   8    0  185  223]
- [  78    1   40 6166]]
+ [   9    0  181  226]
+ [  62    1   38 6184]]
 
  Per class metrics
 
 Class: DNA
- Sensitivity: 0.1861
- Specificity: 0.9871
- Accuracy: 0.9510
- MCC: 0.2520
+ Sensitivity: 0.1546
+ Specificity: 0.9893
+ Accuracy: 0.9517
+ MCC: 0.2295
 
 Class: DRNA
  Sensitivity: 0.1111
@@ -30,41 +30,41 @@ Class: DRNA
  MCC: 0.2349
 
 Class: RNA
- Sensitivity: 0.4447
- Specificity: 0.9920
- Accuracy: 0.9596
- MCC: 0.5698
+ Sensitivity: 0.4351
+ Specificity: 0.9921
+ Accuracy: 0.9592
+ MCC: 0.5631
 
 Class: nonDRNA
- Sensitivity: 0.9811
- Specificity: 0.3582
- Accuracy: 0.9146
- MCC: 0.4589
+ Sensitivity: 0.9839
+ Specificity: 0.3422
+ Accuracy: 0.9154
+ MCC: 0.4583
 
 Training the final model on all training data...
 Testing the final model on unseen test data...
 
 --- FINAL MODEL TEST RESULTS ---
 Final Accuracy: 0.9045
-Final Precision: 0.8888
+Final Precision: 0.8870
 Final Recall: 0.9045
-Final F1-Score: 0.8912
-Final MCC: 0.3951
+Final F1-Score: 0.8901
+Final MCC: 0.3893
 
 Class names (in order): ['DNA' 'DRNA' 'RNA' 'nonDRNA']
 Final Confusion Matrix:
-[[  13    0    2   59]
+[[  11    0    2   61]
  [   0    0    0    4]
  [   4    0   42   61]
- [  30    0    8 1536]]
+ [  28    0    8 1538]]
 
  Per class metrics
 
 Class: DNA
- Sensitivity: 0.1757
- Specificity: 0.9798
+ Sensitivity: 0.1486
+ Specificity: 0.9810
  Accuracy: 0.9460
- MCC: 0.1936
+ MCC: 0.1685
 
 Class: DRNA
  Sensitivity: 0.0000
@@ -79,8 +79,8 @@ Class: RNA
  MCC: 0.5454
 
 Class: nonDRNA
- Sensitivity: 0.9759
- Specificity: 0.3297
+ Sensitivity: 0.9771
+ Specificity: 0.3189
  Accuracy: 0.9079
- MCC: 0.4068
-Elapsed Time 0:01:09
+ MCC: 0.4018
+Elapsed Time 0:00:42
