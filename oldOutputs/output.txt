@@ -1,0 +1,45 @@
+--------------SGDC Classifier-----------------
+Saved trainingsets.txt
+Building Modal with sgdClassifier and RandomForestClassifier
+NLower: 2 NUpper: 7 Max Feature: 19000
+Running 5-fold cross-validation on training data...
+CV MCC score (Estimate) 0.4599
+
+--- CROSS-VALIDATION RESULTS (ESTIMATE) ---
+CV Accuracy: 0.9137
+CV Precision: 0.8942
+CV Recall: 0.9137
+CV F1-Score: 0.8984
+CV Confusion Matrix:
+[[  60    1   25  305]
+ [   2    2    0   18]
+ [  11    0  245  267]
+ [  68    3   59 7729]]
+
+ Per class metrics
+
+Class: DNA
+ Sensitivity: 0.1535
+ Specificity: 0.9904
+ Accuracy: 0.9532
+ MCC: 0.2360
+
+Class: DRNA
+ Sensitivity: 0.0909
+ Specificity: 0.9995
+ Accuracy: 0.9973
+ MCC: 0.1730
+
+Class: RNA
+ Sensitivity: 0.4685
+ Specificity: 0.9898
+ Accuracy: 0.9588
+ MCC: 0.5712
+
+Class: nonDRNA
+ Sensitivity: 0.9835
+ Specificity: 0.3697
+ Accuracy: 0.9181
+ MCC: 0.4813
+
+Training the final model on all training data...

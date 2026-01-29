@@ -1,0 +1,45 @@
+--------------SGDC Classifier-----------------
+Saved trainingsets.txt
+NLower: 2 NUpper: 7 Max Feature: 19000
+Running 5-fold cross-validation on training data...
+CV MCC score (Estimate) 0.4513
+
+--- CROSS-VALIDATION RESULTS (ESTIMATE) ---
+CV Accuracy: 0.9120
+CV Precision: 0.8931
+CV Recall: 0.9120
+CV F1-Score: 0.8975
+CV Confusion Matrix:
+[[  66    1   22  302]
+ [   2    2    0   18]
+ [  12    0  240  271]
+ [  81    4   61 7713]]
+
+ Per class metrics
+
+Class: DNA
+ Sensitivity: 0.1688
+ Specificity: 0.9887
+ Accuracy: 0.9522
+ MCC: 0.2421
+
+Class: DRNA
+ Sensitivity: 0.0909
+ Specificity: 0.9994
+ Accuracy: 0.9972
+ MCC: 0.1600
+
+Class: RNA
+ Sensitivity: 0.4589
+ Specificity: 0.9900
+ Accuracy: 0.9584
+ MCC: 0.5644
+
+Class: nonDRNA
+ Sensitivity: 0.9814
+ Specificity: 0.3686
+ Accuracy: 0.9162
+ MCC: 0.4701
+
+Training the final model on all training data...
+Elapsed Time 0:08:15

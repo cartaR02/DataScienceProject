@@ -5,11 +5,14 @@ from sklearn.model_selection import cross_val_predict, StratifiedKFold
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support, matthews_corrcoef
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier, StackingClassifier
 
+from collections import Counter
 from datetime import datetime
 feature_list = []
 label_list = []
@@ -42,12 +45,13 @@ try:
 except FileNotFoundError:
 	print(f"Error no file")
 
-def saveDataSet(X, Y, filename):
+# takes the list of predicted labels and makes it into a txt file given filename
+def saveDataSet(pred_lab, filename):
     with open(filename, 'w') as f:
-        for sequence, label in zip(X, Y):
-            f.write(f"{sequence},{label}\n")
+        for predicted_label in pred_lab:
+            f.write(f"{predicted_label}\n")
         print(f"Saved {filename}")
-def getMetrics(confusion_matrix, classNames):
+def getMetrics(confusion_matrix, classNamesList):
     metrics = {}
 
     FP = confusion_matrix.sum(axis=0) - numpy.diag(confusion_matrix)
@@ -55,7 +59,7 @@ def getMetrics(confusion_matrix, classNames):
     TP = numpy.diag(confusion_matrix)
     TN = confusion_matrix.sum() - (FP+FN+TP)
 
-    for i, classNames in enumerate(classNames):
+    for i, classNames in enumerate(classNamesList):
         sensitivity = TP[i] / (TP[i] + FN[i]) if (TP[i] + FN[i]) > 0 else 0
 
         specificity = TN[i] / (TN[i] + FP[i]) if (TN[i] + FP[i]) > 0 else 0
@@ -93,26 +97,48 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
 
     X_data = feature_list
     Y_data = label_list
-    X_train, X_test, Y_train, Y_test = train_test_split(X_data,
-                                                  Y_data,
-                                                  test_size = .2,
-                                                  random_state=42
-                                                  )
-    saveDataSet(X_train, Y_train, "trainingsets.txt")
+    X_train = X_data
+    Y_train = Y_data
+    # X_train, Y_train= train_test_split(X_data,Y_data,random_state=42 )
+    #saveDataSet(X_train, Y_train, "trainingsets.txt")
     start = datetime.now()
-    # build the modal
-    text_classification_pipeline = Pipeline([
-        # Vectorize strings
-        ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
 
-        ('clf',SGDClassifier (
-                                loss='log_loss',
-                                max_iter=4000,
-                                class_weight='balanced',
-                                alpha=1e-4,
-                                n_jobs=-1
-                                ))
-    ])
+    # creating classifiers
+    sgdClassifier = SGDClassifier(loss='log_loss', max_iter=4000, class_weight='balanced', alpha=1e-5, n_jobs=-1)
+
+    forestClassifier = RandomForestClassifier(n_estimators=100, class_weight='balanced', max_depth=5, n_jobs=1, random_state=42)
+    nominalClassifier = MultinomialNB()
+    metaClassifier = LogisticRegression(class_weight='balanced', max_iter=2000)
+    
+    #build the modal
+    justSGD = True
+
+    if justSGD:
+        print("Just using SGD classifier")
+        print("Final modal selection")
+        text_classification_pipeline = Pipeline([
+            # Vectorize strings
+            ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit)),
+            ('clf', sgdClassifier)
+
+        ])
+    else:
+        print("selector and ensemble with sgd and nominal classifier")
+        print("Using ensemble")
+        text_classification_pipeline = Pipeline([
+            # Vectorize strings
+            ('tfidf',TfidfVectorizer(ngram_range=(nrange_lower, nrange_upper), analyzer='char',max_features=feature_limit*2)),
+
+            ('selector', SelectKBest(chi2, k=feature_limit)),
+
+            ('ensemble', StackingClassifier(estimators=[
+                ('sgd', sgdClassifier),
+                ('nm', nominalClassifier)
+                ], 
+                final_estimator=metaClassifier,
+                n_jobs=-1))
+            #('clf', DecisionTreeClassifier(random_state,max_depth=10))
+        ])
     print(f"NLower: {nrange_lower} NUpper: {nrange_upper} Max Feature: {feature_limit}")
 
     # --- 1. CROSS-VALIDATION on 80% TRAINING SET ---
@@ -137,17 +163,21 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     
     cv_confusion = confusion_matrix(Y_train, cross_validated_pred) 
     print("CV Confusion Matrix:")
+    print("  DNA  DRNA RNA  nonDRNA")
     print(cv_confusion)
 
     class_names = numpy.unique(Y_train)
     cv_class_metrics = getMetrics(cv_confusion, class_names)
     print("\n Per class metrics")
+    mccAverage = 0
     for class_name, metrics in cv_class_metrics.items():
         print(f"\nClass: {class_name}")
         for metric, value in metrics.items():
+            if metric == 'MCC':
+                mccAverage = mccAverage + value
             print(f" {metric}: {value:.4f}")
-
-
+    mccAverage = mccAverage/4
+    print(f"MCC Average: {mccAverage:.4f}")
 
     # RUNNING MODAL FOR REAL NO TEST
     # --- 3. TRAINING FINAL MODEL on 80% TRAINING SET ---
@@ -155,45 +185,58 @@ def runSClassifier(nrange_lower, nrange_upper, feature_limit):
     text_classification_pipeline.fit(X_train, Y_train)
 
     # Get class names
-    feature_names = text_classification_pipeline.named_steps['clf'].classes_
+    if justSGD:
+        feature_names = text_classification_pipeline.named_steps['clf'].classes_
+    else:
+        feature_names = text_classification_pipeline.named_steps['ensemble'].classes_
 
+    counts = Counter(Y_data)
+    total_count = len(Y_data)
+    print("Blind Test distribution")
+    for label in ['DNA', 'RNA', 'DRNA', 'nonDRNA']:
+        count = counts[label]
+        percent = (count / total_count) * 100
+        print(f"{label:<10} | {count:<10} | {percent:.2f}%")
 
-    # --- 4. TESTING FINAL MODEL on 20% TEST SET ---
-    print("Testing the final model on unseen test data...")
-    final_predictions = text_classification_pipeline.predict(X_test)
-    
-    final_precision, final_recall, final_f1, _ = precision_recall_fscore_support(Y_test, final_predictions, average='weighted') 
-    final_mcc = matthews_corrcoef(Y_test, final_predictions)
-    final_accuracy = accuracy_score(Y_test, final_predictions) 
-
-    print("\n--- FINAL MODEL TEST RESULTS ---")
-    
-    # <-- FIX: Corrected the print labels
-    print(f"Final Accuracy: {final_accuracy:.4f}")
-    print(f"Final Precision: {final_precision:.4f}")
-    print(f"Final Recall: {final_recall:.4f}")
-    print(f"Final F1-Score: {final_f1:.4f}")
-    print(f"Final MCC: {final_mcc:.4f}")
-    
-    # <-- FIX: This is the FINAL confusion matrix
-    final_confusion = confusion_matrix(Y_test, final_predictions)
-    
-    print(f"\nClass names (in order): {feature_names}")
-    print("Final Confusion Matrix:")
-    print(final_confusion)
-
-    final_class_metrics = getMetrics(final_confusion, feature_names)
-    print("\n Per class metrics")
-    for class_name, metrics in final_class_metrics.items():
-        print(f"\nClass: {class_name}")
-        for metric, value in metrics.items():
-            print(f" {metric}: {value:.4f}")
-
+    # TODO make file to be able to test on and then uncomment this
+    generate_predictions(text_classification_pipeline)
     end = datetime.now()
     elapsed = end - start
     elapsed_time = str(elapsed).split(".")[0]
     print(f"Elapsed Time {elapsed_time}")
 
+def generate_predictions(model):
+    output_filename = "FINALpredictions.txt"
+    input_filename = "sequences_test.txt"
+    # handle the lines into a list
+    # for each guess add to a new list
+    input_sequences = []
+
+    # generate list of the inputs
+    try: 
+        with open(input_filename, 'r') as file:
+            for line in file:
+                input_sequences.append(line)
+    except FileNotFoundError:
+        print(f"Error no file")
+        
+
+
+    print("Predicting")
+    output_predictions = model.predict(input_sequences)
+
+    saveDataSet(output_predictions, output_filename)
+    print(f"Predictions Made at {output_filename}")
+
+    counts = Counter(output_predictions)
+    total_count = len(input_sequences)
+    print("Blind Test distribution")
+    for label in ['DNA', 'RNA', 'DRNA', 'nonDRNA']:
+        count = counts[label]
+        percent = (count / total_count) * 100
+        print(f"{label:<10} | {count:<10} | {percent:.2f}%")
+
+    
 
 def main():
 
